@@ -16,6 +16,8 @@ Dn- Номер ЦОДа,
 Sn- номер Spine,
 X- значение по порядку.
 
+чтото 
+
 |Device|Interface|IP Address|Subnet Mask|Default Gateway
 |---|---|---|---|---|
 S1|VLAN3|192.168.3.11|255.255.255.0|192.168.3.1
