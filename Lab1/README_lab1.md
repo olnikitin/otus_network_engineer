@@ -10,7 +10,11 @@
 =
 ### Таблица адресов 
 Адрес план составлен по следующей схеме:
+10.Dn.Sn.X/31
 
+Dn- Номер ЦОДа,
+Sn- номер Spine,
+X- значение по порядку.
 
 |Device|Interface|IP Address|Subnet Mask|Default Gateway
 |---|---|---|---|---|
