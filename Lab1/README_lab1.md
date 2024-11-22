@@ -34,8 +34,8 @@ Spine1 |Eth2|10.2.1.2|255.255.255.254|p2p Spine1 eth2- Leaf2 eth1
 Spine1 |Eth3|10.2.1.4|255.255.255.254|p2p Spine1 eth3- Leaf3 eth1
 Spine2 |lo1|10.0.2.1|255.255.255.255|lo
 Spine2 |Eth1|10.2.2.0|255.255.255.254|p2p Spine2 eth1- Leaf1 eth1
-Spine2 |Eth2|10.2.2.0|255.255.255.254|p2p Spine2 eth2- Leaf2 eth2
-Spine2 |Eth3|10.2.2.0|255.255.255.254|p2p Spine2 eth3- Leaf3 eth2
+Spine2 |Eth2|10.2.2.2|255.255.255.254|p2p Spine2 eth2- Leaf2 eth2
+Spine2 |Eth3|10.2.2.4|255.255.255.254|p2p Spine2 eth3- Leaf3 eth2
 Leaf1 |lo1|10.0.0.1|255.255.255.255|lo
 Leaf2 |lo1|10.0.0.2|255.255.255.255|lo
 Leaf3 |lo1|10.0.0.3|255.255.255.255|lo
