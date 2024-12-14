@@ -148,6 +148,7 @@ end
 ~~~
 </details>
 <details><summary> Конфигурация leaf3 </summary>
+
 ~~~
 hostname Leaf3
 !
@@ -199,6 +200,7 @@ router ospf 1
    max-lsa 12000
 !
 end
+~~~
 </details>
 <details><summary> Конфигурация spine1 </summary>
 
