@@ -266,6 +266,7 @@ end
 ~~~
 </details>
 <details><summary> Конфигурация spine2 </summary>
+
 ~~~
 hostname Spine2
 !
