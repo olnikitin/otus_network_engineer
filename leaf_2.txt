@@ -18,5 +18,4 @@ interface Ethernet2
 !
 interface Loopback1
    ip address 10.0.0.2/32
-   ip ospf area 0.0.0.0
    exit
