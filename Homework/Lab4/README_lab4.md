@@ -1,4 +1,4 @@
-# Underlay. IS-IS
+# Underlay. BGP
 
 ### Цели:
 - Исследовать построение Underlay сети с использованием eBGP.
