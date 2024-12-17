@@ -1,11 +1,11 @@
 # Underlay. IS-IS
 
 ### Цели:
-- Настроить протокол IS-IS для Underlay сети
+- Исследовать построение Underlay сети с использованием eBGP.
 - Проверить связанность между устройствами
 
 
-![Схема сети ](lab3.png)
+![Схема сети ](lab4.png)
 ### Адрес план:
 
 |Device|Interface|IP Address|Subnet Mask|Link type
@@ -31,10 +31,9 @@ Leaf3 |Eth2|10.2.2.5|255.255.255.254|p2p leaf3-eth2 to Spine2-eth3
 ### Подготовка оборудования:
 - назначаем адреса интерфейсов коммутаторам, согласно адрес плана, переводим интерфейс в L3 режим.
 - включаем маршрутизацию
-- включаем протокол динамической маршрутизации is-is, назанчаем номер NET
-- Включаем Passive-interface default, добавляем используемые интерфейсы "no paasive"и используем режим point-to-point
+- включаем протокол динамической маршрутизации BGP, назанчаем номер AS
+- объявляем в BGP необходимые интерфейсы при помощи карты маршрутов и префикс листаов, анонсируем loopback интерфейс в bgp
 - включаем глобальное использование BFD
-- активируем протокол is-is на используемых интерфейсах, назначаем пароль, и активируем режиим point-to-point
 - Включаем и настраиваем BFD на интерфейсах.
 <details><summary> Конфигурация leaf1 </summary>
 
@@ -48,26 +47,12 @@ interface Ethernet1
    no switchport
    ip address 10.2.1.1/31
    bfd interval 50 min-rx 50 multiplier 4
-   no ip ospf neighbor bfd
-   isis enable underlay
-   isis circuit-type level-1
-   isis network point-to-point
-   isis authentication mode md5 level-1
-   isis authentication key 7 PlLVjrzKTdiNkcjzYCQF7g== level-1
-   isis authentication key 7 tQIVPYCu8o6YgmhxDYNyUA== level-2
 !
 interface Ethernet2
    description p2p leaf1-eth2 to Spine2-eth1
    no switchport
    ip address 10.2.2.1/31
    bfd interval 50 min-rx 50 multiplier 4
-   no ip ospf neighbor bfd
-   isis enable underlay
-   isis circuit-type level-1
-   isis network point-to-point
-   isis authentication mode md5 level-1
-   isis authentication key 7 PlLVjrzKTdiNkcjzYCQF7g== level-1
-   isis authentication key 7 tQIVPYCu8o6YgmhxDYNyUA== level-2
 !
 interface Ethernet3
 !
@@ -83,22 +68,30 @@ interface Ethernet8
 !
 interface Loopback1
    ip address 10.0.0.1/32
-   ip ospf area 0.0.0.0
-   isis enable underlay
 !
 interface Management1
 !
 ip routing
 !
-router isis underlay
-   net 49.0001.0100.0000.0001.00
-   is-hostname Leaf1
-   is-type level-1
-   log-adjacency-changes
-   !
-   address-family ipv4 unicast
+ip prefix-list PL_POOL
+   seq 10 permit 10.0.0.1/32
+!
+route-map RM_REDIS_CON permit 10
+   match ip address prefix-list PL_POOL
+!
+router bgp 65001
+   router-id 10.0.0.1
+   maximum-paths 10
+   neighbor SPINE peer group
+   neighbor SPINE remote-as 65000
+   neighbor SPINE bfd
+   neighbor SPINE timers 3 9
+   neighbor 10.2.1.0 peer group SPINE
+   neighbor 10.2.2.0 peer group SPINE
+   redistribute connected route-map RM_REDIS_CON
 !
 end
+
 ~~~
 </details>
 <details><summary> Конфигурация leaf2 </summary>
@@ -113,24 +106,12 @@ interface Ethernet1
    no switchport
    ip address 10.2.1.3/31
    bfd interval 50 min-rx 50 multiplier 4
-   isis enable underlay
-   isis circuit-type level-1
-   isis network point-to-point
-   isis authentication mode md5 level-1
-   isis authentication key 7 PlLVjrzKTdiNkcjzYCQF7g== level-1
-   isis authentication key 7 tQIVPYCu8o6YgmhxDYNyUA== level-2
 !
 interface Ethernet2
    description p2p leaf2-eth2 to spine2-eth2
    no switchport
    ip address 10.2.2.3/31
    bfd interval 50 min-rx 50 multiplier 4
-   isis enable underlay
-   isis circuit-type level-1
-   isis network point-to-point
-   isis authentication mode md5 level-1
-   isis authentication key 7 PlLVjrzKTdiNkcjzYCQF7g== level-1
-   isis authentication key 7 tQIVPYCu8o6YgmhxDYNyUA== level-2
 !
 interface Ethernet3
 !
@@ -146,22 +127,30 @@ interface Ethernet8
 !
 interface Loopback1
    ip address 10.0.0.2/32
-   ip ospf area 0.0.0.0
-   isis enable underlay
 !
 interface Management1
 !
 ip routing
 !
-router isis underlay
-   net 49.0001.0100.0000.0002.00
-   is-hostname Leaf2
-   is-type level-1
-   log-adjacency-changes
-   !
-   address-family ipv4 unicast
+ip prefix-list PL_POOL
+   seq 10 permit 10.0.0.2/32
+!
+route-map RM_REDIS_CON permit 10
+   match ip address prefix-list PL_POOL
+!
+router bgp 65002
+   router-id 10.0.0.2
+   maximum-paths 10
+   neighbor SPINE peer group
+   neighbor SPINE remote-as 65000
+   neighbor SPINE bfd
+   neighbor SPINE timers 3 9
+   neighbor 10.2.1.2 peer group SPINE
+   neighbor 10.2.2.2 peer group SPINE
+   redistribute connected route-map RM_REDIS_CON
 !
 end
+
 ~~~
 </details>
 <details><summary> Конфигурация leaf3 </summary>
@@ -176,24 +165,12 @@ interface Ethernet1
    no switchport
    ip address 10.2.1.5/31
    bfd interval 50 min-rx 50 multiplier 4
-   isis enable underlay
-   isis circuit-type level-1
-   isis network point-to-point
-   isis authentication mode md5 level-1
-   isis authentication key 7 PlLVjrzKTdiNkcjzYCQF7g== level-1
-   isis authentication key 7 tQIVPYCu8o6YgmhxDYNyUA== level-2
 !
 interface Ethernet2
    description p2p leaf3-eth2 to spine2-eth3
    no switchport
    ip address 10.2.2.5/31
    bfd interval 50 min-rx 50 multiplier 4
-   isis enable underlay
-   isis circuit-type level-1
-   isis network point-to-point
-   isis authentication mode md5 level-1
-   isis authentication key 7 PlLVjrzKTdiNkcjzYCQF7g== level-1
-   isis authentication key 7 tQIVPYCu8o6YgmhxDYNyUA== level-2
 !
 interface Ethernet3
 !
@@ -209,22 +186,30 @@ interface Ethernet8
 !
 interface Loopback1
    ip address 10.0.0.3/32
-   ip ospf area 0.0.0.0
-   isis enable underlay
 !
 interface Management1
 !
 ip routing
 !
-router isis underlay
-   net 49.0001.0100.0000.0003.00
-   is-hostname Leaf3
-   is-type level-1
-   log-adjacency-changes
-   !
-   address-family ipv4 unicast
+ip prefix-list PL_POOL
+   seq 10 permit 10.0.0.3/32
+!
+route-map RM_REDIS_CON permit 10
+   match ip address prefix-list PL_POOL
+!
+router bgp 65003
+   router-id 10.0.0.3
+   maximum-paths 10
+   neighbor SPINE peer group
+   neighbor SPINE remote-as 65000
+   neighbor SPINE bfd
+   neighbor SPINE timers 3 9
+   neighbor 10.2.1.4 peer group SPINE
+   neighbor 10.2.2.4 peer group SPINE
+   redistribute connected route-map RM_REDIS_CON
 !
 end
+
 ~~~
 </details>
 <details><summary> Конфигурация spine1 </summary>
@@ -240,12 +225,6 @@ interface Ethernet1
    ip address 10.2.1.0/31
    bfd interval 50 min-rx 50 multiplier 4
    no ip ospf neighbor bfd
-   isis enable underlay
-   isis circuit-type level-1
-   isis network point-to-point
-   isis authentication mode md5 level-1
-   isis authentication key 7 PlLVjrzKTdiNkcjzYCQF7g== level-1
-   isis authentication key 7 tQIVPYCu8o6YgmhxDYNyUA== level-2
 !
 interface Ethernet2
    description p2p Spine1-eth2 to Leaf2-eth1
@@ -253,12 +232,6 @@ interface Ethernet2
    ip address 10.2.1.2/31
    bfd interval 50 min-rx 50 multiplier 4
    no ip ospf neighbor bfd
-   isis enable underlay
-   isis circuit-type level-1
-   isis network point-to-point
-   isis authentication mode md5 level-1
-   isis authentication key 7 PlLVjrzKTdiNkcjzYCQF7g== level-1
-   isis authentication key 7 tQIVPYCu8o6YgmhxDYNyUA== level-2
 !
 interface Ethernet3
    description p2p Spine1-eth3 to Leaf3-eth1
@@ -266,12 +239,6 @@ interface Ethernet3
    ip address 10.2.1.4/31
    bfd interval 50 min-rx 50 multiplier 4
    no ip ospf neighbor bfd
-   isis enable underlay
-   isis circuit-type level-1
-   isis network point-to-point
-   isis authentication mode md5 level-1
-   isis authentication key 7 PlLVjrzKTdiNkcjzYCQF7g== level-1
-   isis authentication key 7 tQIVPYCu8o6YgmhxDYNyUA== level-2
 !
 interface Ethernet4
 !
@@ -285,21 +252,27 @@ interface Ethernet8
 !
 interface Loopback1
    ip address 10.0.1.1/32
-   isis enable underlay
 !
 interface Management1
 !
 ip routing
 !
-router isis underlay
-   net 49.0001.0100.0000.1001.00
-   is-hostname Spine1
-   is-type level-1
-   log-adjacency-changes
-   !
-   address-family ipv4 unicast
+route-map RM_REDIS_CON permit 10
+   match interface Loopback1
+!
+peer-filter LEAF-AS
+   10 match as-range 65001-65003 result accept
+!
+router bgp 65000
+   router-id 10.0.1.1
+   maximum-paths 10
+   bgp listen range 10.2.1.0/24 peer-group LEAF peer-filter LEAF-AS
+   neighbor LEAF peer group
+   neighbor LEAF bfd
+   redistribute connected route-map RM_REDIS_CON
 !
 end
+
 ~~~
 </details>
 <details><summary> Конфигурация spine2 </summary>
@@ -314,41 +287,18 @@ interface Ethernet1
    no switchport
    ip address 10.2.2.0/31
    bfd interval 50 min-rx 50 multiplier 4
-   no ip ospf neighbor bfd
-   isis enable underlay
-   isis circuit-type level-1
-   isis network point-to-point
-   isis authentication mode md5 level-1
-   isis authentication key 7 PlLVjrzKTdiNkcjzYCQF7g== level-1
-   isis authentication key 7 tQIVPYCu8o6YgmhxDYNyUA== level-2
 !
 interface Ethernet2
    description p2p Spine2-eth2 to Leaf2-eth2
    no switchport
    ip address 10.2.2.2/31
    bfd interval 50 min-rx 50 multiplier 4
-   no ip ospf neighbor bfd
-   isis enable underlay
-   isis circuit-type level-1
-   isis network point-to-point
-   isis authentication mode md5 level-1
-   isis authentication key 7 PlLVjrzKTdiNkcjzYCQF7g== level-1
-   isis authentication key 7 tQIVPYCu8o6YgmhxDYNyUA== level-2
 !
 interface Ethernet3
    description p2p Spine2-eth3 to Leaf3-eth2
    no switchport
    ip address 10.2.2.4/31
    bfd interval 50 min-rx 50 multiplier 4
-   ip ospf neighbor bfd
-   ip ospf network point-to-point
-   ip ospf area 0.0.0.0
-   isis enable underlay
-   isis circuit-type level-1
-   isis network point-to-point
-   isis authentication mode md5 level-1
-   isis authentication key 7 PlLVjrzKTdiNkcjzYCQF7g== level-1
-   isis authentication key 7 tQIVPYCu8o6YgmhxDYNyUA== level-2
 !
 interface Ethernet4
 !
@@ -362,28 +312,34 @@ interface Ethernet8
 !
 interface Loopback1
    ip address 10.0.2.1/32
-   isis enable underlay
 !
 interface Management1
 !
 ip routing
 !
-router isis underlay
-   net 49.0001.0100.0000.2001.00
-   is-hostname Spine2
-   is-type level-1
-   log-adjacency-changes
-   !
-   address-family ipv4 unicast
+route-map RM_REDIS_CON permit 10
+   match interface Loopback1
+!
+peer-filter LEAF-AS
+   10 match as-range 65001-65003 result accept
+!
+router bgp 65000
+   router-id 10.0.2.1
+   maximum-paths 10
+   bgp listen range 10.2.2.0/24 peer-group LEAF peer-filter LEAF-AS
+   neighbor LEAF peer group
+   neighbor LEAF bfd
+   redistribute connected route-map RM_REDIS_CON
 !
 end
+
 ~~~
 </details>
 
 ### Проверка связности устройств:
 Leaf1
 ~~~
-Leaf1#  show ip route isis
+Leaf1#sh ip route 
 
 VRF: default
 Codes: C - connected, S - static, K - kernel, 
@@ -398,37 +354,35 @@ Codes: C - connected, S - static, K - kernel,
        DP - Dynamic Policy Route, L - VRF Leaked,
        G  - gRIBI, RC - Route Cache Route
 
- I L1     10.0.0.2/32 [115/30] via 10.2.1.0, Ethernet1
-                               via 10.2.2.0, Ethernet2
- I L1     10.0.0.3/32 [115/30] via 10.2.1.0, Ethernet1
-                               via 10.2.2.0, Ethernet2
- I L1     10.0.1.1/32 [115/20] via 10.2.1.0, Ethernet1
- I L1     10.0.2.1/32 [115/20] via 10.2.2.0, Ethernet2
- I L1     10.2.1.2/31 [115/20] via 10.2.1.0, Ethernet1
- I L1     10.2.1.4/31 [115/20] via 10.2.1.0, Ethernet1
- I L1     10.2.2.2/31 [115/20] via 10.2.2.0, Ethernet2
- I L1     10.2.2.4/31 [115/20] via 10.2.2.0, Ethernet2
+Gateway of last resort is not set
 
-Leaf1#show isis neighbors
- 
-Instance  VRF      System Id        Type Interface          SNPA              State Hold time   Circuit Id          
-underlay  default  Spine1           L1   Ethernet1          P2P               UP    29          0E                  
-underlay  default  Spine2           L1   Ethernet2          P2P               UP    22          0E                  
-Leaf1#show isis database level-1
+ C        10.0.0.1/32 is directly connected, Loopback1
+ B E      10.0.0.2/32 [200/0] via 10.2.2.0, Ethernet2
+ B E      10.0.2.1/32 [200/0] via 10.2.2.0, Ethernet2
+ C        10.2.1.0/31 is directly connected, Ethernet1
+ C        10.2.2.0/31 is directly connected, Ethernet2
 
-IS-IS Instance: underlay VRF: default
-  IS-IS Level 1 Link State Database
-    LSPID                   Seq Num  Cksum  Life Length IS Flags
-    Leaf1.00-00                  82  46217   816    121 L1 <>
-    Leaf2.00-00                  82   4894   799    121 L1 <>
-    Leaf3.00-00                  80  36248   371    121 L1 <>
-    Spine1.00-00                 83  34775   773    146 L1 <>
-    Spine2.00-00                 83   4659  1070    146 L1 <>
+Leaf1#sh ip bgp summary 
+BGP summary information for VRF default
+Router identifier 10.0.0.1, local AS number 65001
+Neighbor Status Codes: m - Under maintenance
+  Neighbor         V  AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
+  10.2.1.0         4  65000          60242     63573    0    0 00:00:04 Estab   3      3
+  10.2.2.0         4  65000          25950     29873    0    0 00:00:01 Estab   3      3
+Leaf1#sh ip bgp neighbors bfd 
+BGP BFD Neighbor Table
+Flags: U - BFD is enabled for BGP neighbor and BFD session state is UP
+       I - BFD is enabled for BGP neighbor and BFD session state is INIT
+       D - BFD is enabled for BGP neighbor and BFD session state is DOWN
+       N - BFD is not enabled for BGP neighbor
+Neighbor           Interface          Up/Down    State       Flags
+10.2.1.0           Ethernet1          00:00:28   Established U    
+10.2.2.0           Ethernet2          00:00:25   Established U    
 
 ~~~
 Leaf2
 ~~~
-Leaf2#show ip route isis
+Leaf2#sh ip route 
 
 VRF: default
 Codes: C - connected, S - static, K - kernel, 
@@ -443,37 +397,35 @@ Codes: C - connected, S - static, K - kernel,
        DP - Dynamic Policy Route, L - VRF Leaked,
        G  - gRIBI, RC - Route Cache Route
 
- I L1     10.0.0.1/32 [115/30] via 10.2.1.2, Ethernet1
-                               via 10.2.2.2, Ethernet2
- I L1     10.0.0.3/32 [115/30] via 10.2.1.2, Ethernet1
-                               via 10.2.2.2, Ethernet2
- I L1     10.0.1.1/32 [115/20] via 10.2.1.2, Ethernet1
- I L1     10.0.2.1/32 [115/20] via 10.2.2.2, Ethernet2
- I L1     10.2.1.0/31 [115/20] via 10.2.1.2, Ethernet1
- I L1     10.2.1.4/31 [115/20] via 10.2.1.2, Ethernet1
- I L1     10.2.2.0/31 [115/20] via 10.2.2.2, Ethernet2
- I L1     10.2.2.4/31 [115/20] via 10.2.2.2, Ethernet2
+Gateway of last resort is not set
 
-Leaf2#show isis neighbors
- 
-Instance  VRF      System Id        Type Interface          SNPA              State Hold time   Circuit Id          
-underlay  default  Spine1           L1   Ethernet1          P2P               UP    24          0F                  
-underlay  default  Spine2           L1   Ethernet2          P2P               UP    26          0F                  
-Leaf2#show isis database
+ B E      10.0.0.1/32 [200/0] via 10.2.2.2, Ethernet2
+ C        10.0.0.2/32 is directly connected, Loopback1
+ B E      10.0.2.1/32 [200/0] via 10.2.2.2, Ethernet2
+ C        10.2.1.2/31 is directly connected, Ethernet1
+ C        10.2.2.2/31 is directly connected, Ethernet2
+Leaf2#sh ip bgp summary 
+BGP summary information for VRF default
+Router identifier 10.0.0.2, local AS number 65002
+Neighbor Status Codes: m - Under maintenance
+  Neighbor         V  AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
+  10.2.1.2         4  65000          59173     62370    0    0 00:00:04 Active         
+  10.2.2.2         4  65000          25946     29662    0    0 00:00:04 Active         
+Leaf2#sh ip bgp neighbors bfd
+BGP BFD Neighbor Table
+Flags: U - BFD is enabled for BGP neighbor and BFD session state is UP
+       I - BFD is enabled for BGP neighbor and BFD session state is INIT
+       D - BFD is enabled for BGP neighbor and BFD session state is DOWN
+       N - BFD is not enabled for BGP neighbor
+Neighbor           Interface          Up/Down    State       Flags
+10.2.1.2           Ethernet1          00:00:03   Established U    
+10.2.2.2           Ethernet2          00:00:09   Established U    
 
-IS-IS Instance: underlay VRF: default
-  IS-IS Level 1 Link State Database
-    LSPID                   Seq Num  Cksum  Life Length IS Flags
-    Leaf1.00-00                  82  46217   528    121 L1 <>
-    Leaf2.00-00                  82   4894   512    121 L1 <>
-    Leaf3.00-00                  81  35737   959    121 L1 <>
-    Spine1.00-00                 83  34775   485    146 L1 <>
-    Spine2.00-00                 83   4659   782    146 L1 <>
 
 ~~~
 Leaf3
 ~~~
-Leaf3#show ip route isis
+Leaf3#sh ip route 
 
 VRF: default
 Codes: C - connected, S - static, K - kernel, 
@@ -488,37 +440,36 @@ Codes: C - connected, S - static, K - kernel,
        DP - Dynamic Policy Route, L - VRF Leaked,
        G  - gRIBI, RC - Route Cache Route
 
- I L1     10.0.0.1/32 [115/30] via 10.2.1.4, Ethernet1
-                               via 10.2.2.4, Ethernet2
- I L1     10.0.0.2/32 [115/30] via 10.2.1.4, Ethernet1
-                               via 10.2.2.4, Ethernet2
- I L1     10.0.1.1/32 [115/20] via 10.2.1.4, Ethernet1
- I L1     10.0.2.1/32 [115/20] via 10.2.2.4, Ethernet2
- I L1     10.2.1.0/31 [115/20] via 10.2.1.4, Ethernet1
- I L1     10.2.1.2/31 [115/20] via 10.2.1.4, Ethernet1
- I L1     10.2.2.0/31 [115/20] via 10.2.2.4, Ethernet2
- I L1     10.2.2.2/31 [115/20] via 10.2.2.4, Ethernet2
+Gateway of last resort is not set
 
-Leaf3#show isis neighbors
- 
-Instance  VRF      System Id        Type Interface          SNPA              State Hold time   Circuit Id          
-underlay  default  Spine1           L1   Ethernet1          P2P               UP    28          10                  
-underlay  default  Spine2           L1   Ethernet2          P2P               UP    28          10                  
-Leaf3#show isis database
+ B E      10.0.0.1/32 [200/0] via 10.2.2.4, Ethernet2
+ B E      10.0.0.2/32 [200/0] via 10.2.2.4, Ethernet2
+ C        10.0.0.3/32 is directly connected, Loopback1
+ B E      10.0.2.1/32 [200/0] via 10.2.2.4, Ethernet2
+ C        10.2.1.4/31 is directly connected, Ethernet1
+ C        10.2.2.4/31 is directly connected, Ethernet2
+Leaf3#sh ip bgp summary
+BGP summary information for VRF default
+Router identifier 10.0.0.3, local AS number 65003
+Neighbor Status Codes: m - Under maintenance
+  Neighbor         V  AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
+  10.2.1.4         4  65000          26415     30072    0    0 00:00:03 Estab   2      2
+  10.2.2.4         4  65000          26092     29849    0    0 00:00:00 Estab   2      2
+Leaf3#sh ip bgp neighbors bfd
+BGP BFD Neighbor Table
+Flags: U - BFD is enabled for BGP neighbor and BFD session state is UP
+       I - BFD is enabled for BGP neighbor and BFD session state is INIT
+       D - BFD is enabled for BGP neighbor and BFD session state is DOWN
+       N - BFD is not enabled for BGP neighbor
+Neighbor           Interface          Up/Down    State       Flags
+10.2.1.4           Ethernet1          00:00:04   Established U    
+10.2.2.4           Ethernet2          00:00:00   Established U    
 
-IS-IS Instance: underlay VRF: default
-  IS-IS Level 1 Link State Database
-    LSPID                   Seq Num  Cksum  Life Length IS Flags
-    Leaf1.00-00                  82  46217   480    121 L1 <>
-    Leaf2.00-00                  83   4383  1193    121 L1 <>
-    Leaf3.00-00                  81  35737   912    121 L1 <>
-    Spine1.00-00                 83  34775   438    146 L1 <>
-    Spine2.00-00                 83   4659   735    146 L1 <>
 
 ~~~
 Spine1
 ~~~
-Spine1#show ip route isis
+Spine1#sh ip route 
 
 VRF: default
 Codes: C - connected, S - static, K - kernel, 
@@ -533,47 +484,41 @@ Codes: C - connected, S - static, K - kernel,
        DP - Dynamic Policy Route, L - VRF Leaked,
        G  - gRIBI, RC - Route Cache Route
 
- I L1     10.0.0.1/32 [115/20] via 10.2.1.1, Ethernet1
- I L1     10.0.0.2/32 [115/20] via 10.2.1.3, Ethernet2
- I L1     10.0.0.3/32 [115/20] via 10.2.1.5, Ethernet3
- I L1     10.0.2.1/32 [115/30] via 10.2.1.1, Ethernet1
-                               via 10.2.1.3, Ethernet2
-                               via 10.2.1.5, Ethernet3
- I L1     10.2.2.0/31 [115/20] via 10.2.1.1, Ethernet1
- I L1     10.2.2.2/31 [115/20] via 10.2.1.3, Ethernet2
- I L1     10.2.2.4/31 [115/20] via 10.2.1.5, Ethernet3
+Gateway of last resort is not set
 
-Spine1#show isis neighbors
- 
-Instance  VRF      System Id        Type Interface          SNPA              State Hold time   Circuit Id          
-underlay  default  Leaf1            L1   Ethernet1          P2P               UP    29          0E                  
-underlay  default  Leaf2            L1   Ethernet2          P2P               UP    29          0D                  
-underlay  default  Leaf3            L1   Ethernet3          P2P               UP    22          0D                  
-Spine1#show isis database
-IS-IS Instance: underlay VRF: default
-  IS-IS Level 1 Link State Database
-    LSPID                   Seq Num  Cksum  Life Length IS Flags
-    Leaf1.00-00                  82  46217   450    121 L1 <>
-    Leaf2.00-00                  83   4383  1163    121 L1 <>
-    Leaf3.00-00                  81  35737   882    121 L1 <>
-    Spine1.00-00                 84  34264  1189    146 L1 <>
-    Spine2.00-00                 83   4659   704    146 L1 <>
+ B E      10.0.0.1/32 [200/0] via 10.2.1.1, Ethernet1
+ B E      10.0.0.2/32 [200/0] via 10.2.1.3, Ethernet2
+ B E      10.0.0.3/32 [200/0] via 10.2.1.5, Ethernet3
+ C        10.0.1.1/32 is directly connected, Loopback1
+ C        10.2.1.0/31 is directly connected, Ethernet1
+ C        10.2.1.2/31 is directly connected, Ethernet2
+ C        10.2.1.4/31 is directly connected, Ethernet3
 
-Spine1#show isis network topology 
-IS-IS Instance: underlay VRF: default
-  IS-IS paths to level-1 routers
-    System Id        Metric   IA Metric Next-Hop         Interface                SNPA             
-    Leaf1            10       0         Leaf1            Ethernet1                P2P              
-    Leaf2            10       0         Leaf2            Ethernet2                P2P              
-    Leaf3            10       0         Leaf3            Ethernet3                P2P              
-    Spine2           20       0         Leaf1            Ethernet1                P2P              
-                                        Leaf2            Ethernet2                P2P              
-                                        Leaf3            Ethernet3                P2P              
+Spine1#sh ip bgp summary 
+BGP summary information for VRF default
+Router identifier 10.0.1.1, local AS number 65000
+Neighbor Status Codes: m - Under maintenance
+  Neighbor         V  AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
+  10.2.1.3         4  65002              7         6    0    0 00:00:02 Estab   1      1
+  10.2.1.5         4  65003              5         6    0    0 00:00:01 Estab   1      1
+
+
+Spine1#sh ip bgp neighbors bfd 
+BGP BFD Neighbor Table
+Flags: U - BFD is enabled for BGP neighbor and BFD session state is UP
+       I - BFD is enabled for BGP neighbor and BFD session state is INIT
+       D - BFD is enabled for BGP neighbor and BFD session state is DOWN
+       N - BFD is not enabled for BGP neighbor
+Neighbor           Interface          Up/Down    State       Flags
+10.2.1.1           Ethernet1          00:00:27   Established U    
+10.2.1.3           Ethernet2          00:00:27   Established U    
+10.2.1.5           Ethernet3          00:00:19   Established U    
+
 
 ~~~
 Spine2
 ~~~
-Spine2#show ip route isis
+Spine2#sh ip route 
 
 VRF: default
 Codes: C - connected, S - static, K - kernel, 
@@ -588,42 +533,34 @@ Codes: C - connected, S - static, K - kernel,
        DP - Dynamic Policy Route, L - VRF Leaked,
        G  - gRIBI, RC - Route Cache Route
 
- I L1     10.0.0.1/32 [115/20] via 10.2.2.1, Ethernet1
- I L1     10.0.0.2/32 [115/20] via 10.2.2.3, Ethernet2
- I L1     10.0.0.3/32 [115/20] via 10.2.2.5, Ethernet3
- I L1     10.0.1.1/32 [115/30] via 10.2.2.1, Ethernet1
-                               via 10.2.2.3, Ethernet2
-                               via 10.2.2.5, Ethernet3
- I L1     10.2.1.0/31 [115/20] via 10.2.2.1, Ethernet1
- I L1     10.2.1.2/31 [115/20] via 10.2.2.3, Ethernet2
- I L1     10.2.1.4/31 [115/20] via 10.2.2.5, Ethernet3
+Gateway of last resort is not set
 
-Spine2#show isis neighbors
- 
-Instance  VRF      System Id        Type Interface          SNPA              State Hold time   Circuit Id          
-underlay  default  Leaf1            L1   Ethernet1          P2P               UP    23          0F                  
-underlay  default  Leaf2            L1   Ethernet2          P2P               UP    28          0E                  
-underlay  default  Leaf3            L1   Ethernet3          P2P               UP    29          0E                  
-Spine2#show isis database
+ B E      10.0.0.1/32 [200/0] via 10.2.2.1, Ethernet1
+ B E      10.0.0.2/32 [200/0] via 10.2.2.3, Ethernet2
+ B E      10.0.0.3/32 [200/0] via 10.2.2.5, Ethernet3
+ C        10.0.2.1/32 is directly connected, Loopback1
+ C        10.2.2.0/31 is directly connected, Ethernet1
+ C        10.2.2.2/31 is directly connected, Ethernet2
+ C        10.2.2.4/31 is directly connected, Ethernet3
 
-IS-IS Instance: underlay VRF: default
-  IS-IS Level 1 Link State Database
-    LSPID                   Seq Num  Cksum  Life Length IS Flags
-    Leaf1.00-00                  83  45706  1173    121 L1 <>
-    Leaf2.00-00                  83   4383  1122    121 L1 <>
-    Leaf3.00-00                  81  35737   841    121 L1 <>
-    Spine1.00-00                 84  34264  1149    146 L1 <>
-    Spine2.00-00                 83   4659   664    146 L1 <>
+Spine2#sh ip bgp summary 
+BGP summary information for VRF default
+Router identifier 10.0.2.1, local AS number 65000
+Neighbor Status Codes: m - Under maintenance
+  Neighbor         V  AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
+  10.2.2.1         4  65001             23        23    0    0 00:00:48 Estab   1      1
+  10.2.2.3         4  65002             25        23    0    0 00:00:48 Estab   1      1
+  10.2.2.5         4  65003             24        22    0    0 00:00:46 Estab   1      1
 
-Spine2#sh isis network topology 
-IS-IS Instance: underlay VRF: default
-  IS-IS paths to level-1 routers
-    System Id        Metric   IA Metric Next-Hop         Interface                SNPA             
-    Leaf1            10       0         Leaf1            Ethernet1                P2P              
-    Leaf2            10       0         Leaf2            Ethernet2                P2P              
-    Leaf3            10       0         Leaf3            Ethernet3                P2P              
-    Spine1           20       0         Leaf1            Ethernet1                P2P              
-                                        Leaf2            Ethernet2                P2P              
-                                        Leaf3            Ethernet3                P2P              
+Spine2#sh ip bgp neighbors bfd
+BGP BFD Neighbor Table
+Flags: U - BFD is enabled for BGP neighbor and BFD session state is UP
+       I - BFD is enabled for BGP neighbor and BFD session state is INIT
+       D - BFD is enabled for BGP neighbor and BFD session state is DOWN
+       N - BFD is not enabled for BGP neighbor
+Neighbor           Interface          Up/Down    State       Flags
+10.2.2.1           Ethernet1          00:00:01   Established U    
+10.2.2.3           Ethernet2          00:00:01   Established U    
+10.2.2.5           Ethernet3          00:00:01   Established U    
 
 ~~~
