@@ -673,7 +673,7 @@ Port Channel Port-Channel1:
 
 ~~~
 
-Client1
+Client1 ping to vpc1
 
 ~~~
 Client1#sh ip arp
