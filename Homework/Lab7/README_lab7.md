@@ -610,6 +610,8 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
                                  10.0.0.3              -       100     0       65000 65003 i
 
 ~~~
+
+~~~
 Leaf2#show lacp interface 
 State: A = Active, P = Passive; S=ShortTimeout, L=LongTimeout;
        G = Aggregable, I = Individual; s+=InSync, s-=OutOfSync;
