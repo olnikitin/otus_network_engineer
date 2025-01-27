@@ -672,7 +672,6 @@ Port Channel Port-Channel1:
  Et3     Bundled | 8000,50-00-00-1b-5e-8d        2   ALGs+CD    0x0001    32768
 
 ~~~
-~~~
 
 Client1
 
@@ -688,5 +687,4 @@ PING 192.168.10.10 (192.168.10.10) 72(100) bytes of data.
 80 bytes from 192.168.10.10: icmp_seq=3 ttl=64 time=465 ms
 80 bytes from 192.168.10.10: icmp_seq=4 ttl=64 time=515 ms
 80 bytes from 192.168.10.10: icmp_seq=5 ttl=64 time=523 ms
-
 ~~~
