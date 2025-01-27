@@ -610,6 +610,67 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
                                  10.0.0.3              -       100     0       65000 65003 i
 
 ~~~
+Leaf2#show lacp interface 
+State: A = Active, P = Passive; S=ShortTimeout, L=LongTimeout;
+       G = Aggregable, I = Individual; s+=InSync, s-=OutOfSync;
+       C = Collecting, X = state machine expired,
+       D = Distributing, d = default neighbor state
+             |                        Partner                            Actor 
+Port Status  | Sys-id                  Port#  State    OperKey  PortPri  Port# 
+---- --------|------------------------ ------ -------- -------- -------- ------
+Port Channel Port-Channel1:                                    
+Et3  Bundled | 8000,50-00-00-1b-5e-8d      1  ALGs+CD   0x0001    32768      3 
+
+                    |                 Actor                                    
+ Port      Status   |  State       OperKey     PortPriority   TimeoutMultiplier
+------- ------------|----------- ----------- ---------------- -----------------
+Port Channel Port-Channel1:                                           
+ Et3       Bundled  |  ALGs+CD      0x0001            32768                    
+
+Leaf2#show lacp peer 
+State: A = Active, P = Passive; S=ShortTimeout, L=LongTimeout;
+       G = Aggregable, I = Individual; s+=InSync, s-=OutOfSync;
+       C = Collecting, X = state machine expired,
+       D = Distributing, d = default neighbor state
+                 |                        Partner                              
+ Port    Status  | Sys-id                    Port#   State     OperKey  PortPri
+------ ----------|------------------------- ------- --------- --------- -------
+Port Channel Port-Channel1:                                            
+ Et3     Bundled | 8000,50-00-00-1b-5e-8d        1   ALGs+CD    0x0001    32768
+
+~~~
+
+~~~
+Leaf3#sh lacp interface
+State: A = Active, P = Passive; S=ShortTimeout, L=LongTimeout;
+       G = Aggregable, I = Individual; s+=InSync, s-=OutOfSync;
+       C = Collecting, X = state machine expired,
+       D = Distributing, d = default neighbor state
+             |                        Partner                            Actor 
+Port Status  | Sys-id                  Port#  State    OperKey  PortPri  Port# 
+---- --------|------------------------ ------ -------- -------- -------- ------
+Port Channel Port-Channel1:                                    
+Et3  Bundled | 8000,50-00-00-1b-5e-8d      2  ALGs+CD   0x0001    32768      3 
+
+                    |                 Actor                                    
+ Port      Status   |  State       OperKey     PortPriority   TimeoutMultiplier
+------- ------------|----------- ----------- ---------------- -----------------
+Port Channel Port-Channel1:                                           
+ Et3       Bundled  |  ALGs+CD      0x0001            32768                    
+
+Leaf3#sh lacp peer
+State: A = Active, P = Passive; S=ShortTimeout, L=LongTimeout;
+       G = Aggregable, I = Individual; s+=InSync, s-=OutOfSync;
+       C = Collecting, X = state machine expired,
+       D = Distributing, d = default neighbor state
+                 |                        Partner                              
+ Port    Status  | Sys-id                    Port#   State     OperKey  PortPri
+------ ----------|------------------------- ------- --------- --------- -------
+Port Channel Port-Channel1:                                            
+ Et3     Bundled | 8000,50-00-00-1b-5e-8d        2   ALGs+CD    0x0001    32768
+
+~~~
+~~~
 
 Client1
 
