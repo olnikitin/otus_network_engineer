@@ -4,7 +4,7 @@
 - Настроить отказоустойчивое подключение клиентов с использованием EVPN Multihoming
 
 
-![Схема сети ](lab5.png)
+![Схема сети ](lab7.png)
 ### Адрес план:
 
 |Device|Interface|IP Address|Subnet Mask|Link type
@@ -28,10 +28,7 @@ Leaf3 |Eth1|10.2.1.5|255.255.255.254|p2p leaf3-eth1 to Spine1-eth3
 Leaf3 |Eth2|10.2.2.5|255.255.255.254|p2p leaf3-eth2 to Spine2-eth3
 VPC1  |Eth0|192.168.10.10|255.255.255.0|VPC1_vlan10-eth0 to Leaf1-eth3
 VPC2  |Eth0|192.168.20.10|255.255.255.0|VPC2_vlan20-eth0 to Leaf1-eth4
-VPC3  |Eth0|192.168.10.11|255.255.255.0|VPC3_vlan10-eth0 to Leaf2-eth3
-VPC4  |Eth0|192.168.20.11|255.255.255.0|VPC4_vlan20-eth0 to Leaf2-eth4
-VPC5  |Eth0|192.168.10.12|255.255.255.0|VPC5_vlan10-eth0 to Leaf3-eth3
-VPC6  |Eth0|192.168.20.12|255.255.255.0|VPC6_vlan20-eth0 to Leaf3-eth4
+VPC3  |Eth0|192.168.10.11|255.255.255.0|VPC3 to leaf2-leaf3
 
 ## Выполнение:
 ### Подготовка оборудования:
@@ -43,7 +40,17 @@ VPC6  |Eth0|192.168.20.12|255.255.255.0|VPC6_vlan20-eth0 to Leaf3-eth4
 - Включаем и настраиваем BFD на интерфейсах.
 - создаем интерфейс VxVlan 1
 - назначаем адреса всем VPC, сошласно адрес-плана
+- настраиваем port-channel на интерфейсах коммутаторов
 - Объявляем в BGP созданные vlan, указываем route-distinguisher, route-target 
+
+Для настройки EVPN Multihoming нам необходимо на Leaf которые задействованы в данной схеме выполнить одинаковые настройки для Etherchannel и задать следующие параметры:
+
+Ethernet Segment Identifier (ESI). Для простоты настройки и отладки предлагается использовать следующий формат: 0000:0000:<lower-leaf-ID>:<higher-leaf-ID>:<port-channel-ID>. Например в нашем случае получается: 0000:0000:0002:0003:0001
+
+route-target необходим для того, чтоб только Leaf'ы обслуживающие ESI могли импортировать данные маршруты. Предлагается использовать принцип формирования как и для ESI: <lower-leaf-ID>:<higher-leaf-ID>:<port-channel-ID>. Например в нашем случае получается: 00:02:00:03:00:01
+
+lacp system-id необходим для того, чтоб устройство Client-1 считало, что поднимет LACP с одним и тем же устройством. Предлагается использовать следующий формат: 0000:<lower-node-ID>:<higher-node-ID>. Например в нашем случае получается: 0000.0002.0003
+
 
 <details><summary> Конфигурация leaf1 </summary>
 
@@ -151,7 +158,15 @@ hostname Leaf2
 !
 spanning-tree mode mstp
 !
-vlan 10,20
+vlan 10,20,30
+!
+interface Port-Channel1
+   switchport access vlan 10
+   !
+   evpn ethernet-segment
+      identifier 0000:0000:0002:0003:0001
+      route-target import 00:02:00:03:00:23
+   lacp system-id 0000.0002.0003
 !
 interface Ethernet1
    description p2p Leaf2-eth1 to Spine1-eth2
@@ -166,14 +181,9 @@ interface Ethernet2
    bfd interval 100 min-rx 100 multiplier 3
 !
 interface Ethernet3
-   description to-pc3
-   mtu 9000
-   switchport access vlan 10
+   channel-group 1 mode active
 !
 interface Ethernet4
-   description to-pc4
-   mtu 9000
-   switchport access vlan 20
 !
 interface Ethernet5
 !
@@ -193,6 +203,7 @@ interface Vxlan1
    vxlan udp-port 4789
    vxlan vlan 10 vni 10010
    vxlan vlan 20 vni 10020
+   vxlan vlan 30 vni 10030
 !
 ip routing
 !
@@ -230,13 +241,18 @@ router bgp 65002
       route-target both 10:10020
       redistribute learned
    !
+   vlan 30
+      rd 10.0.0.2:10030
+      route-target both 10:10030
+      redistribute learned
+   !
    address-family evpn
       neighbor EVPN activate
    !
    address-family ipv4
       neighbor SPINE activate
 !
-end
+end 
 
 
 ~~~
@@ -248,7 +264,15 @@ hostname Leaf3
 !
 spanning-tree mode mstp
 !
-vlan 10,20
+vlan 10,20,30
+!
+interface Port-Channel1
+   switchport access vlan 10
+   !
+   evpn ethernet-segment
+      identifier 0000:0000:0002:0003:0001
+      route-target import 00:02:00:03:00:23
+   lacp system-id 0000.0002.0003
 !
 interface Ethernet1
    description p2p leaf3-eth1 to spine1-eth3
@@ -263,14 +287,9 @@ interface Ethernet2
    bfd interval 100 min-rx 100 multiplier 3
 !
 interface Ethernet3
-   description to-pc5
-   mtu 9000
-   switchport access vlan 10
+   channel-group 1 mode active
 !
 interface Ethernet4
-   description to-pc6
-   mtu 9000
-   switchport access vlan 20
 !
 interface Ethernet5
 !
@@ -285,11 +304,14 @@ interface Loopback1
 !
 interface Management1
 !
+interface Vlan20
+!
 interface Vxlan1
    vxlan source-interface Loopback1
    vxlan udp-port 4789
    vxlan vlan 10 vni 10010
    vxlan vlan 20 vni 10020
+   vxlan vlan 30 vni 10030
 !
 ip routing
 !
@@ -327,6 +349,11 @@ router bgp 65003
       route-target both 10:10020
       redistribute learned
    !
+   vlan 30
+      rd 10.0.0.3:10030
+      route-target both 10:10030
+      redistribute learned
+   !
    address-family evpn
       neighbor EVPN activate
    !
@@ -334,6 +361,7 @@ router bgp 65003
       neighbor SPINE activate
 !
 end
+
 
 
 ~~~
@@ -492,44 +520,52 @@ end
 ~~~
 </details>
 
+<details><summary> Конфигурация client-1 </summary>
+
+~~~
+hostname Client1
+!
+spanning-tree mode mstp
+!
+interface Port-Channel1
+   description to Leaf-2/3
+   no switchport
+   ip address 192.168.10.11/24
+!
+interface Ethernet1
+   description to Leaf-2
+   channel-group 1 mode active
+!
+interface Ethernet2
+   description to Leaf-3
+   channel-group 1 mode active
+!
+interface Ethernet3
+!
+interface Ethernet4
+!
+interface Ethernet5
+!
+interface Ethernet6
+!
+interface Ethernet7
+!
+interface Ethernet8
+!
+interface Management1
+!
+ip routing
+!
+end
+
+~~~
+
+</details>
+
 ### Проверка связности устройств:
-Spine1
-~~~
-Spine1#sh bgp evpn summary
-BGP summary information for VRF default
-Router identifier 10.0.1.1, local AS number 65000
-Neighbor Status Codes: m - Under maintenance
-  Neighbor V AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
-  10.0.0.1 4 65001         197282    375734    0    0    2d18h Estab   2      2
-  10.0.0.2 4 65002          34036     66073    0    0 12:43:47 Estab   2      2
-  10.0.0.3 4 65003          24618     55194    0    0 08:41:30 Estab   2      2
-
-~~~
-Spine2
-~~~
-Spine2#sh bgp evpn summary 
-BGP summary information for VRF default
-Router identifier 10.0.2.1, local AS number 65000
-Neighbor Status Codes: m - Under maintenance
-  Neighbor V AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
-  10.0.0.1 4 65001           9589     18362    0    0 04:07:07 Estab   2      2
-  10.0.0.2 4 65002          46046     90984    0    0 16:53:58 Estab   2      2
-  10.0.0.3 4 65003           9236     21089    0    0 03:43:54 Estab   2      2
-
-~~~
 Leaf1
 ~~~
-Leaf1#
-Leaf1#show vxlan address-table
-          Vxlan Mac Address Table
-----------------------------------------------------------------------
-
-VLAN  Mac Address     Type      Prt  VTEP             Moves   Last Move
-----  -----------     ----      ---  ----             -----   ---------
-  10  0050.7966.680a  EVPN      Vx1  10.0.0.3         1       0:00:44 ago
-  20  0050.7966.680b  EVPN      Vx1  10.0.0.3         1       0:00:05 ago
-Total Remote Mac Addresses for this criterion: 2
-Leaf1#show bgp evpn route-type mac-ip
+Leaf1#show bgp evpn route-type auto-discovery
 BGP routing table information for VRF default
 Router identifier 10.0.0.1, local AS number 65001
 Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
@@ -538,91 +574,56 @@ Origin codes: i - IGP, e - EGP, ? - incomplete
 AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
 
           Network                Next Hop              Metric  LocPref Weight  Path
- * >      RD: 10.0.0.1:10010 mac-ip 0050.7966.6806
-                                 -                     -       -       0       i
- * >      RD: 10.0.0.1:10020 mac-ip 0050.7966.6807
-                                 -                     -       -       0       i
- * >Ec    RD: 10.0.0.3:10010 mac-ip 0050.7966.680a
+ * >Ec    RD: 10.0.0.2:10010 auto-discovery 0 0000:0000:0002:0003:0001
+                                 10.0.0.2              -       100     0       65000 65002 i
+ *  ec    RD: 10.0.0.2:10010 auto-discovery 0 0000:0000:0002:0003:0001
+                                 10.0.0.2              -       100     0       65000 65002 i
+ * >Ec    RD: 10.0.0.3:10010 auto-discovery 0 0000:0000:0002:0003:0001
                                  10.0.0.3              -       100     0       65000 65003 i
- *  ec    RD: 10.0.0.3:10010 mac-ip 0050.7966.680a
+ *  ec    RD: 10.0.0.3:10010 auto-discovery 0 0000:0000:0002:0003:0001
                                  10.0.0.3              -       100     0       65000 65003 i
- * >Ec    RD: 10.0.0.3:10020 mac-ip 0050.7966.680b
+ * >Ec    RD: 10.0.0.2:1 auto-discovery 0000:0000:0002:0003:0001
+                                 10.0.0.2              -       100     0       65000 65002 i
+ *  ec    RD: 10.0.0.2:1 auto-discovery 0000:0000:0002:0003:0001
+                                 10.0.0.2              -       100     0       65000 65002 i
+ * >Ec    RD: 10.0.0.3:1 auto-discovery 0000:0000:0002:0003:0001
                                  10.0.0.3              -       100     0       65000 65003 i
- *  ec    RD: 10.0.0.3:10020 mac-ip 0050.7966.680b
+ *  ec    RD: 10.0.0.3:1 auto-discovery 0000:0000:0002:0003:0001
                                  10.0.0.3              -       100     0       65000 65003 i
 
-~~~
-Leaf2
-~~~
-Leaf2#show vxlan address-table
-          Vxlan Mac Address Table
-----------------------------------------------------------------------
-
-VLAN  Mac Address     Type      Prt  VTEP             Moves   Last Move
-----  -----------     ----      ---  ----             -----   ---------
-  10  0050.7966.6806  EVPN      Vx1  10.0.0.1         1       0:01:34 ago
-  10  0050.7966.680a  EVPN      Vx1  10.0.0.3         1       0:01:33 ago
-  20  0050.7966.6807  EVPN      Vx1  10.0.0.1         1       0:00:54 ago
-  20  0050.7966.680b  EVPN      Vx1  10.0.0.3         1       0:00:54 ago
-Total Remote Mac Addresses for this criterion: 4
-Leaf2#show bgp evpn route-type mac-ip
+Leaf1#show bgp evpn route-type ethernet-segment
 BGP routing table information for VRF default
-Router identifier 10.0.0.2, local AS number 65002
+Router identifier 10.0.0.1, local AS number 65001
 Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
                     c - Contributing to ECMP, % - Pending BGP convergence
 Origin codes: i - IGP, e - EGP, ? - incomplete
 AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
 
           Network                Next Hop              Metric  LocPref Weight  Path
- * >Ec    RD: 10.0.0.1:10010 mac-ip 0050.7966.6806
-                                 10.0.0.1              -       100     0       65000 65001 i
- *  ec    RD: 10.0.0.1:10010 mac-ip 0050.7966.6806
-                                 10.0.0.1              -       100     0       65000 65001 i
- * >Ec    RD: 10.0.0.1:10020 mac-ip 0050.7966.6807
-                                 10.0.0.1              -       100     0       65000 65001 i
- *  ec    RD: 10.0.0.1:10020 mac-ip 0050.7966.6807
-                                 10.0.0.1              -       100     0       65000 65001 i
- * >Ec    RD: 10.0.0.3:10010 mac-ip 0050.7966.680a
+ * >Ec    RD: 10.0.0.2:1 ethernet-segment 0000:0000:0002:0003:0001 10.0.0.2
+                                 10.0.0.2              -       100     0       65000 65002 i
+ *  ec    RD: 10.0.0.2:1 ethernet-segment 0000:0000:0002:0003:0001 10.0.0.2
+                                 10.0.0.2              -       100     0       65000 65002 i
+ * >Ec    RD: 10.0.0.3:1 ethernet-segment 0000:0000:0002:0003:0001 10.0.0.3
                                  10.0.0.3              -       100     0       65000 65003 i
- *  ec    RD: 10.0.0.3:10010 mac-ip 0050.7966.680a
-                                 10.0.0.3              -       100     0       65000 65003 i
- * >Ec    RD: 10.0.0.3:10020 mac-ip 0050.7966.680b
-                                 10.0.0.3              -       100     0       65000 65003 i
- *  ec    RD: 10.0.0.3:10020 mac-ip 0050.7966.680b
+ *  ec    RD: 10.0.0.3:1 ethernet-segment 0000:0000:0002:0003:0001 10.0.0.3
                                  10.0.0.3              -       100     0       65000 65003 i
 
 ~~~
-Leaf3
+
+Client1
+
 ~~~
-Leaf3#show vxlan address-table
-          Vxlan Mac Address Table
-----------------------------------------------------------------------
+Client1#sh ip arp
+Address         Age (sec)  Hardware Addr   Interface
+192.168.10.10     2:09:02  0050.7966.6806  Port-Channel1
 
-VLAN  Mac Address     Type      Prt  VTEP             Moves   Last Move
-----  -----------     ----      ---  ----             -----   ---------
-  10  0050.7966.6806  EVPN      Vx1  10.0.0.1         1       0:02:10 ago
-  20  0050.7966.6807  EVPN      Vx1  10.0.0.1         1       0:01:31 ago
-Total Remote Mac Addresses for this criterion: 2
-Leaf3#show bgp evpn route-type mac-ip
-BGP routing table information for VRF default
-Router identifier 10.0.0.3, local AS number 65003
-Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
-                    c - Contributing to ECMP, % - Pending BGP convergence
-Origin codes: i - IGP, e - EGP, ? - incomplete
-AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
-
-          Network                Next Hop              Metric  LocPref Weight  Path
- * >Ec    RD: 10.0.0.1:10010 mac-ip 0050.7966.6806
-                                 10.0.0.1              -       100     0       65000 65001 i
- *  ec    RD: 10.0.0.1:10010 mac-ip 0050.7966.6806
-                                 10.0.0.1              -       100     0       65000 65001 i
- * >Ec    RD: 10.0.0.1:10020 mac-ip 0050.7966.6807
-                                 10.0.0.1              -       100     0       65000 65001 i
- *  ec    RD: 10.0.0.1:10020 mac-ip 0050.7966.6807
-                                 10.0.0.1              -       100     0       65000 65001 i
- * >      RD: 10.0.0.3:10010 mac-ip 0050.7966.680a
-                                 -                     -       -       0       i
- * >      RD: 10.0.0.3:10020 mac-ip 0050.7966.680b
-                                 -                     -       -       0       i
+Client1#ping 192.168.10.10
+PING 192.168.10.10 (192.168.10.10) 72(100) bytes of data.
+80 bytes from 192.168.10.10: icmp_seq=1 ttl=64 time=289 ms
+80 bytes from 192.168.10.10: icmp_seq=2 ttl=64 time=416 ms
+80 bytes from 192.168.10.10: icmp_seq=3 ttl=64 time=465 ms
+80 bytes from 192.168.10.10: icmp_seq=4 ttl=64 time=515 ms
+80 bytes from 192.168.10.10: icmp_seq=5 ttl=64 time=523 ms
 
 ~~~

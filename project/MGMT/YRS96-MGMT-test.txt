@@ -1,0 +1,160 @@
+Switch# sh version
+B4TECH Software, CS2148T, Version 7.0.4.99
+Copyright (C) B4TECH.  All Rights Reserved.
+The current running image is flash:/boot/CS2100_v7.0.4.99.r3.bin
+
+Switch uptime is 0 days, 0 hours, 7 minutes
+Hardware Type is 4D4Q
+Hardware Version is 1.1
+SDRAM size 2048M
+Flash size 8192M
+BootRom Version is A.2.31
+System serial number is C2148T300907
+Current Web Version is 7.3.0.9
+Switch# sh environment
+Fan Module:
+------------------------------------------
+FanId   Index   Status  Speed       Mode
+1       1-1     OK       40%        Auto
+2       1-2     OK       40%        Auto
+3       1-3     OK       40%        Auto
+4       1-4     OK       40%        Auto
+Power status:
+Index     Status    Power     Type      Alert
+1         PRESENT   OK        AC        NO
+2         PRESENT   OK        AC        NO
+---------------------------------------------------------
+Sensor status (Degree Centigrade):
+Index Temperature Lower_alarm Upper_alarm Critical_limit Position
+1     39          5           65          80             AROUND_CHIP
+2     25          5           65          80             AROUND_CHIP
+3     46          -10         100         110            SWITCH_CHIP
+Switch# sh license
+License files:
+======================================================================
+flash:/BC9740E7BAFD.lic:
+  Created Time: Thu Apr 11 18:00:21 EDT 2024
+  Vendor:       Unspecified
+  Customer:     Unspecified
+  Device MAC:   BC:97:40:E7:BA:FD
+  Feature Set:  PIM_SM IGMP BGP BFD IPV6
+                OSPF6 PIM_SM6 MVR6 RIPNG TUNNEL_V6
+                PIM_DM PBR OSPF MLAG ISIS
+                MACSEC BGP4+ VRF QINQ MVR
+                ERPS MEF ETHOAM EXTEND_ACL HW_MONITOR
+                IPFIX EFD
+Switch# sh interface status
+
+Port        Status     Duplex  Speed    Mode    Type                    Descript
+ion
+--------------------------------------------------------------------------------
+-----------------
+eth-0-1     down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-2     down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-3     down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-4     down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-5     down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-6     down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-7     down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-8     down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-9     down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-10    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-11    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-12    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-13    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-14    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-15    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-16    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-17    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-18    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-19    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-20    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-21    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-22    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-23    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-24    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-25    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-26    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-27    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-28    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-29    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-30    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-31    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-32    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-33    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-34    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-35    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-36    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-37    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-38    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-39    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-40    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-41    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-42    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-43    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-44    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-45    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-46    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-47    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-48    down       auto    auto     ACCESS  1000BASE_T
+
+eth-0-49    down       full    40G      ACCESS  Unknown
+
+eth-0-50    down       full    40G      ACCESS  Unknown
+
+eth-0-51    down       auto    a-10G    ACCESS  Unknown
+
+eth-0-52    down       auto    a-10G    ACCESS  Unknown
+
+eth-0-53    down       auto    a-10G    ACCESS  Unknown
+
+eth-0-54    down       auto    a-10G    ACCESS  Unknown
+
+Switch#
