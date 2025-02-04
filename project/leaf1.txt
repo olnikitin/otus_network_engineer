@@ -1,5 +1,5 @@
 
-sysname YRS-Place6-SWT-LEAF-01
+sysname SWT-LEAF-01
 #
 ip vpn-instance management 
 ipv4-family
@@ -39,22 +39,13 @@ ssh client hmac sha2_512 sha2_256
 ssh client key-exchange dh_group_exchange_sha256 dh_group16_sha512 curve25519_sha256
 #
 snmp-agent
-snmp-agent sys-info location HQ=ID:0006=MSK=CHM4=DC2=30H5=H010=21
+
 snmp-agent sys-info version v3
 #
 user-interface vty 0 4
  idle-timeout 15 0
  protocol inbound ssh
 #
-aaa
- undo administrator remote authen-fail
- Y
- undo local-user policy security-enhance
- local-aaa-user user-name complexity-check disable
- local-user admin password irreversible-cipher 8mA-Siz8
- local-user admin password-force-change disable
- local-user admin privilege level 3
- Y
  local-user admin service-type terminal ssh
 #
 stp mode rstp
@@ -63,7 +54,7 @@ stp instance 0 root primary
 stp flush disable
 #
 dfs-group 1
- authentication-mode hmac-sha256 password 8mA-Siz8
+ authentication-mode hmac-sha256 password 123456
  dual-active detection source ip 192.168.2.27 vpn-instance management
  priority 150
 #
